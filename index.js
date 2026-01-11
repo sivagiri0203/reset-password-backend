@@ -15,8 +15,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Password Reset Backend is running");
-});
+  res.send("Password Reset Backend Running 🚀");
+}); 
 
 const PORT = process.env.PORT || 7002;
 app.listen(PORT, () =>

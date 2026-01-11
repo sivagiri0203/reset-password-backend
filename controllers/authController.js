@@ -3,39 +3,57 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 
-/* =========================
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import sendEmail from "../utils/sendEmail.js";
+
+/* ===============================
    REGISTER
-========================= */
+================================ */
 export const register = async (req, res) => {
   const { email, password } = req.body;
 
-  const exist = await User.findOne({ email });
-  if (exist) return res.status(400).json({ message: "User already exists" });
+  const existingUser = await User.findOne({ email });
+  if (existingUser)
+    return res.status(400).json({ message: "User already exists" });
 
-  const hashed = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  await User.create({ email, password: hashed });
-  res.json({ message: "Registered Successfully" });
+  await User.create({
+    email,
+    password: hashedPassword,
+  });
+
+  res.json({ message: "User registered successfully" });
 };
 
-/* =========================
+/* ===============================
    LOGIN
-========================= */
+================================ */
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user)
+    return res.status(404).json({ message: "User not found" });
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(401).json({ message: "Invalid password" });
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch)
+    return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1h"
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+
+  res.json({
+    message: "Login successful",
+    token
   });
-
-  res.json({ token });
 };
+
 
 /* =========================
    FORGOT PASSWORD

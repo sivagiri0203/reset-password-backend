@@ -68,23 +68,35 @@ export const forgotPassword = async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString("hex");
 
     user.resetToken = resetToken;
-    user.resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 min
+    user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    await sendEmail(
-      user.email,
-      "Password Reset",
-      `Click this link to reset password:\n\n${resetLink}`
-    );
+    try {
+      await sendEmail(
+        user.email,
+        "Password Reset",
+        `Click this link to reset password:\n${resetLink}`
+      );
+    } catch (mailError) {
+      console.error("EMAIL ERROR 👉", mailError);
+      return res.status(500).json({
+        message: "Email sending failed. Check email config",
+      });
+    }
 
-    res.json({ message: "Reset link sent to email" });
+    return res.json({
+      message: "Reset link sent to email",
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Forgot password failed" });
+    console.error("FORGOT ERROR 👉", err);
+    return res.status(500).json({
+      message: "Forgot password failed",
+    });
   }
 };
+
 
 /* ===============================
    RESET PASSWORD

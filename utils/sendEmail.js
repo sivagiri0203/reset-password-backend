@@ -5,8 +5,8 @@ const sendEmail = async (to, subject, text) => {
     service: "gmail",
     auth: {
       user: process.env.EMAIL,
-      pass: process.env.EMAIL_PASSWORD
-    }
+      pass: process.env.EMAIL_PASSWORD,
+    },
   });
 
   await transporter.sendMail({

@@ -10,7 +10,7 @@ const sendEmail = async (to, subject, html) => {
   await apiInstance.sendTransacEmail({
     sender: {
       name: "Support Team",
-      email: "sivagirimaster@gmail.com", // 👈 Brevo la verify panna email
+      email: "sivagirimaster@gmail.com", 
     },
     to: [{ email: to }],
     subject,

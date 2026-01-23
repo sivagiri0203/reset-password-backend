@@ -8,7 +8,7 @@ const sendEmail = async (to, subject, html) => {
   const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
   await apiInstance.sendTransacEmail({
-    sender: { name: "Support", email: "noreply@yourdomain.com" },
+    sender: { name: "Support", email: "sivagirimaster@gmail.com" },
     to: [{ email: to }],
     subject,
     htmlContent: html,

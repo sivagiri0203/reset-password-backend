@@ -22,7 +22,7 @@ export const register = async (req, res) => {
       password: hashedPassword,
     });
 
-    res.status(201).json({ message: "Register success" });
+    res.status(201).json({ message: "Registered successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Register failed" });
@@ -46,7 +46,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    res.json({ message: "Login success" });
+    res.json({ message: "Login successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Login failed" });
@@ -59,29 +59,30 @@ export const login = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const token = crypto.randomBytes(32).toString("hex");
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-    user.resetToken = token;
-    user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    await sendEmail(
-      email,
-      "Reset Your Password",
-      `<p>Click here to reset your password:</p>
-       <a href="${resetLink}">${resetLink}</a>`
-    );
+    const html = `
+      <h2>Password Reset</h2>
+      <p>Click the link below:</p>
+      <a href="${resetUrl}">${resetUrl}</a>
+    `;
+
+    await sendEmail(user.email, "Password Reset", html);
 
     res.json({ message: "Reset link sent to email" });
-  } catch (error) {
-    console.error("EMAIL ERROR:", error);
-    res.status(500).json({ message: "Email sending failed. Check email config" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Email sending failed" });
   }
 };
 
@@ -94,26 +95,22 @@ export const resetPassword = async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     const user = await User.findOne({
-      resetToken: token,
-      resetTokenExpiry: { $gt: Date.now() },
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
     });
 
-    if (!user) {
-      return res.status(400).json({ message: "Token invalid or expired" });
-    }
+    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    user.password = hashedPassword;
-    user.resetToken = undefined;
-    user.resetTokenExpiry = undefined;
-
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
     await user.save();
 
     res.json({ message: "Password reset successful" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Reset password failed" });
+    res.status(500).json({ message: err.message });
   }
 };
